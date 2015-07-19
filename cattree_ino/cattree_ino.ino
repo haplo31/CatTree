@@ -37,7 +37,7 @@ int setMinMax,minMotor1,minMotor2,maxMotor1,maxMotor2;
 int diffMotor1,diffMotor2;
 int precMotor1;
 int precMotor2;
-
+int setState;
 void setup()  
 {
   pinMode(laserPin,OUTPUT);
@@ -57,8 +57,7 @@ void setup()
   Serial.println(Herkulex.stat(Motor1));
   Serial.print("Status2:"); 
   Serial.println(Herkulex.stat(Motor2));
-  
-
+   
   minMotor1=readInt(10);
   minMotor2=readInt(20);
   maxMotor1=readInt(30);
@@ -76,13 +75,15 @@ void setup()
   delay(2100);
   
   attachInterrupt(2, setLimits, RISING); // Set a routine who calls setLimits function when pressing the set button
-  
   //End of initialization
   Herkulex.setLed(Motor2,LED_GREEN2);
   Herkulex.setLed(Motor1,LED_GREEN2);
 }
 void setLimits(){
+       // noInterrupts();
 	//Move servos to Home
+	torqueOFF(Motor1);
+	torqueOFF(Motor2);
 	Herkulex.moveAllAngle(Motor1, 0, 2);
 	Herkulex.moveAllAngle(Motor2, 0, 2); 	
 	Herkulex.actionAll(1000);
@@ -124,71 +125,88 @@ void setLimits(){
 	saveInt(20,minMotor2);
 	saveInt(30,maxMotor1);
 	saveInt(40,maxMotor2);
-	motionState=0; // for exit in standby mode	
+  //interrupts();
+  setState=0;
+	motionState=0;
+	torqueON(Motor1);
+	torqueON(Motor2); // for exit in standby mode	
 };
 void loop(){
-	if(motionState==0){
-		valMvtPin=digitalRead(mvtPin);
-		if (valMvtPin==1){
-			motionState=1;
-			digitalWrite(laserPin,HIGH);
-			beginActivity=millis();
-			randExercice = int(random(1,3)); // Random choose of the exercice
-		}
-		else{
-			delay(3000);
-		}
-	}
-	else{
-		if(millis()-beginActivity<30000){
-	    switch (randExercice) {
-				// First Exercice
-				case 1:
-					if(millis()- timer > 700)
-					{
-						randMotor1 = int(random(minMotor1,maxMotor1));
-				    randMotor2 = int(random(minMotor2,maxMotor2));
-						randTime=int(random(500,1500));
-						Serial.print(randMotor1);
-						Herkulex.moveAllAngle(Motor1, randMotor1, 2);
-						Herkulex.moveAllAngle(Motor2, randMotor2, 2); 
-						Herkulex.actionAll(randTime);
-						timer=millis();
-						delay(randTime);
-					}
-				break;
-
-				// Second Exercice
-				case 2:
-					if(millis() - timer > 5000){
-						randMotor1 = int(random(minMotor1,maxMotor1));
-				    randMotor2 = int(random(minMotor2,maxMotor2));
-						refMotor1 = randMotor1;
-						refMotor2 = randMotor2;
-						randTime=int(random(500,1500));
-						Herkulex.moveAllAngle(Motor1, randMotor1, 2);
-						Herkulex.moveAllAngle(Motor2, randMotor2, 2); 
-						Herkulex.actionAll(randTime);
-						timer=millis();
-						delay(randTime);
-					}
-					else{
-					  // Shaking
-						randMotor1 = refMotor1+int(random(-5,5));
-						randMotor2 = refMotor2+int(random(-5,5));
-						randTime=int(random(500,1500));
-						Herkulex.moveAllAngle(Motor1, randMotor1, 2);
-						Herkulex.moveAllAngle(Motor2, randMotor2, 2); 
-						Herkulex.actionAll(40);
-						delay(40);				  		
-					}
-				break;
+	setLimits();
+	/*
+  Serial.println("loop");
+  valueButton=digitalRead(21);
+  if(valueButton==1){
+  	setLimits();
+  	setState=1;
+  }
+  else{
+  	if(setState==0){
+	    if(motionState==0){
+				valMvtPin=digitalRead(mvtPin);
+				if (valMvtPin==1){
+					motionState=1;
+					digitalWrite(laserPin,HIGH);
+					beginActivity=millis();
+					randExercice = int(random(1,3)); // Random choose of the exercice
+				}
+				else{
+					delay(500);
+				}
 			}
-		}
-		else{
-			motionState=0;
-			digitalWrite(laserPin,LOW);
-		}
-	}
+			else{
+				if(millis()-beginActivity<30000){
+			    switch (randExercice) {
+						// First Exercice
+						case 1:
+							if(millis()- timer > 700)
+							{
+								randMotor1 = int(random(minMotor1,maxMotor1));
+						    randMotor2 = int(random(minMotor2,maxMotor2));
+								randTime=int(random(500,1500));
+								Serial.print(randMotor1);
+								Herkulex.moveAllAngle(Motor1, randMotor1, 2);
+								Herkulex.moveAllAngle(Motor2, randMotor2, 2); 
+								Herkulex.actionAll(randTime);
+								timer=millis();
+								delay(randTime);
+							}
+						break;
+
+						// Second Exercice
+						case 2:
+							if(millis() - timer > 5000){
+								randMotor1 = int(random(minMotor1,maxMotor1));
+						    randMotor2 = int(random(minMotor2,maxMotor2));
+								refMotor1 = randMotor1;
+								refMotor2 = randMotor2;
+								randTime=int(random(500,1500));
+								Herkulex.moveAllAngle(Motor1, randMotor1, 2);
+								Herkulex.moveAllAngle(Motor2, randMotor2, 2); 
+								Herkulex.actionAll(randTime);
+								timer=millis();
+								delay(randTime);
+							}
+							else{
+							  // Shaking
+								randMotor1 = refMotor1+int(random(-5,5));
+								randMotor2 = refMotor2+int(random(-5,5));
+								randTime=int(random(500,1500));
+								Herkulex.moveAllAngle(Motor1, randMotor1, 2);
+								Herkulex.moveAllAngle(Motor2, randMotor2, 2); 
+								Herkulex.actionAll(40);
+								delay(40);				  		
+							}
+						break;
+					}
+				}
+				else{
+					motionState=0;
+					digitalWrite(laserPin,LOW);
+				}
+			} 
+  	}
+
+  }*/
 }
 
